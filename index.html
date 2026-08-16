@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Cyber Mindset Analyzer</title>
+    <!-- Chart.js Library via CDN -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        :root {
+            --bg-color: #030712;
+            --card-bg: #0f172a;
+            --cyber-green: #10b981;
+            --cyber-blue: #06b6d4;
+            --cyber-red: #f43f5e;
+            --text-main: #f8fafc;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #1e293b;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: var(--cyber-blue);
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+            margin-top: 0;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: #020617;
+            border: 1px solid var(--cyber-blue);
+            border-radius: 6px;
+            color: var(--cyber-green);
+            padding: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            box-shadow: inset 0 0 10px rgba(6, 182, 212, 0.1);
+            box-sizing: border-box;
+        }
+
+        textarea:focus {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr 2fr;
+            }
+        }
+
+        .metrics-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .metric-box {
+            background: #020617;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid var(--cyber-blue);
+        }
+
+        .metric-box.stress { border-left-color: var(--cyber-red); }
+        .metric-box.focus { border-left-color: var(--cyber-green); }
+
+        .label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        /* Chart Wrapper */
+        .chart-box {
+            background: #020617;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #1e293b;
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-bar {
+            margin-top: 20px;
+            background: #1e293b;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--cyber-green);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>[ CYBER MINDSET ANALYZER ]</h1>
+    <div class="subtitle">SYSTEM STATUS: READY // MATRIX KEYSTROKE RADAR ACTIVE</div>
+    
+    <textarea id="cyberInput" placeholder="> यहाँ कुछ भी टाइप करना शुरू करें... सिस्टम आपकी उंगलियों के टाइमिंग पैटर्न को ट्रैक कर रहा है..."></textarea>
+
+    <div class="dashboard">
+        <!-- Metrics -->
+        <div class="metrics-panel">
+            <div class="metric-box stress">
+                <div class="label">// STRESS LEVEL</div>
+                <div id="stressOut" class="value" style="color: var(--cyber-red);">0%</div>
+            </div>
+            <div class="metric-box focus">
+                <div class="label">// BRAIN FOCUS</div>
+                <div id="focusOut" class="value" style="color: var(--cyber-green);">0%</div>
+            </div>
+            <div class="metric-box">
+                <div class="label">// MINDSET BRAINWAVE</div>
+                <div id="mindsetOut" class="value" style="color: #eab308;">CALIBRATING</div>
+            </div>
+        </div>
+
+        <!-- Live Hacker Graph -->
+        <div class="chart-box">
+            <canvas id="liveHackerChart"></canvas>
+        </div>
+    </div>
+
+    <div id="statusBar" class="status-bar">AWAITING INPUT: TYPE AT LEAST 5 CHARACTERS TO GENERATE REAL-TIME MATRIX GRAPH...</div>
+</div>
+
+<script>
+    const inputArea = document.getElementById('cyberInput');
+    const stressOut = document.getElementById('stressOut');
+    const focusOut = document.getElementById('focusOut');
+    const mindsetOut = document.getElementById('mindsetOut');
+    const statusBar = document.getElementById('statusBar');
+
+    let keyMap = {};
+    let holdRecords = [];
+    let flightRecords = [];
+    let lastRelease = null;
+
+    // Initialize Chart.js with Neon Cyber Design
+    const ctx = document.getElementById('liveHackerChart').getContext('2d');
+    const liveChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+            datasets: [
+                {
+                    label: 'Hold Time (Dwell)',
+                    data:,
+                    borderColor: '#06b6d4',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 2,
+                    backgroundColor: 'rgba(6, 182, 212, 0.05)',
+                    fill: true
+                },
+                {
+                    label: 'Flight Interval',
+                    data:,
+                    borderColor: '#10b981',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 2,
+                    backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' }, min: 0, max: 400 }
+            },
+            plugins: {
+                legend: { labels: { color: '#f8fafc', font: { family: 'Courier New' } } }
+            }
+        }
+    });
+
+    inputArea.addEventListener('keydown', (e) => {
+        if (!keyMap[e.key]) {
+            keyMap[e.key] = performance.now();
+        }
+        if (lastRelease) {
+            let flight = performance.now() - lastRelease;
+            if (flight < 1200) flightRecords.push(flight);
+        }
+    });
+
+    inputArea.addEventListener('keyup', (e) => {
+        if (keyMap[e.key]) {
+            let hold = performance.now() - keyMap[e.key];
+            holdRecords.push(hold);
+            delete keyMap[e.key];
+            
+            // Real-time Graph Update (Keep last 10 data points)
+            updateLiveGraph(hold, flightRecords[flightRecords.length - 1] || 0);
+        }
+        lastRelease = performance.now();
+
+        if (holdRecords.length > 3) {
+            processCyberMetrics();
+        }
+    });
+
+    function updateLiveGraph(newHold, newFlight) {
+        // Shift old values and push new ones
+        liveChart.data.datasets[0].data.shift();
+        liveChart.data.datasets[0].data.push(Math.min(newHold, 400));
+
+        liveChart.data.datasets[1].data.shift();
+        liveChart.data.datasets[1].data.push(Math.min(newFlight, 400));
+
+        liveChart.update('none'); // Quick update without lag
+    }
+
+    function processCyberMetrics() {
+        let avgHold = holdRecords.reduce((a,b)=>a+b,0) / holdRecords.length;
+        let avgFlight = flightRecords.reduce((a,b)=>a+b,0) / (flightRecords.length || 1);
+
+        // Core logic for stress calculation via rhythm variance
+        let sScore = 15;
+        if (avgHold > 130) sScore += 45;
+        else if (avgHold > 95) sScore += 25;
+
+        let variance = flightRecords.map(f => Math.pow(f - avgFlight, 2)).reduce((a,b)=>a+b,0) / flightRecords.length;
+        if (variance > 4500) sScore += 30;
+        sScore = Math.min(Math.max(sScore, 8), 96);
+
+        let fScore = 100 - sScore;
+        if (variance < 1500 && avgFlight < 250) fScore += 12;
+        fScore = Math.min(Math.max(fScore, 12), 99);
+
+        let systemStatus = "BALANCED MATRIX";
+        let logs = "DATA INGESTION STABLE // USER WAVEFORMS NORMAL";
+
+        if (sScore > 55) {
+            systemStatus = "OVERLOADED / STRESSED";
+            logs = "WARNING: HIGH KEY VARIANCE DETECTED. BREATHING PACING RECOMMENDED.";
+        } else if (fScore > 75) {
+            systemStatus = "HYPER FOCUS / ALPHA MODE";
+            logs = "EXCELLENT RHYTHM: SYSTEM DETECTS HIGH COGNITIVE ALIGNMENT.";
+        }
+
+        // Render UI
+        stressOut.innerText = Math.round(sScore) + "%";
+        focusOut.innerText = Math.round(fScore) + "%";
+        mindsetOut.innerText = systemStatus;
+        statusBar.innerText = `LOG: ${logs}`;
+    }
+</script>
+
+</body>
+  </html>
+  
