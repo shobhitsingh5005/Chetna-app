@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHETNA Bio-Digital OS - Terminal v1.0</title>
+    <title>CHETNA Bio-Digital OS - Terminal v1.1</title>
     <style>
         :root {
             --bg-dark: #05070b;
@@ -84,7 +84,6 @@
             box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
         }
 
-        /* धांसू हैकिंग लाइव ग्राफ */
         .graph-wrapper {
             background: #020408;
             border: 1px solid rgba(0, 229, 255, 0.3);
@@ -169,17 +168,16 @@
 
 <div class="terminal-container">
     <div class="system-header">
-        <h1>[CHETNA BIO-DIGITAL OS v1.0]</h1>
-        <div class="status-tag">CORE STATUS: ONLINE // ANTIDOTE CORE ACTIVE</div>
+        <h1>[CHETNA BIO-DIGITAL OS v1.1]</h1>
+        <div class="status-tag">CORE STATUS: ACTIVE // KEYSTROKE RADAR ONLINE</div>
     </div>
 
     <div class="radar-box">
         <textarea id="hackerInput" placeholder="> यहाँ टाइप करना शुरू करें... बायो-सिग्नल्स रडार सक्रिय हो जाएगा..."></textarea>
     </div>
 
-    <!-- लाइव ग्राफ -->
     <div class="graph-wrapper">
-        <div class="graph-title">// लाइव न्यूरो-बायो स्पेक्ट्रोग्राम (LIVE SIGNALS)</div>
+        <div class="graph-title">// लाइव न्यूरो-बायो स्पेक्ट्रोग्राम (LIVE KEYSTROKE SIGNALS)</div>
         <canvas id="liveGraph"></canvas>
     </div>
 
@@ -211,11 +209,12 @@
     let totalKeys = 0;
     let backspaceCount = 0;
     let startTime = null;
-    let micActivated = false;
-    let graphActive = false;
     let waveOffset = 0;
+    let animationId = null;
+    let currentStress = 0;
+    let currentFocus = 0;
+    let isCurrentlyFake = false;
 
-    // ग्राफ कैनवास का साइज सेट करना
     function resizeCanvas() {
         canvas.width = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
@@ -223,36 +222,22 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // 1. ऑटो-माइक एक्टिवेशन परमिशन
-    function initAutoMic() {
-        if (!micActivated) {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(() => {
-                micActivated = true;
-                console.log("माइक बैकग्राउंड में एक्टिवेट हो गया है।");
-            })
-            .catch(() => {
-                console.log("माइक परमिशन पेंडिंग है।");
-            });
-        }
-    }
-
-    // 2. धांसू हैकिंग ग्राफ एनिमेशन
-    function drawGraph(stressScore, focusScore, isFake) {
+    // स्वतंत्र हाइब्रिड ग्राफ एनीमेशन जो बिना परमिशन लॉक के तुरंत चलेगा
+    function animateGraph() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
         ctx.beginPath();
         ctx.lineWidth = 2;
         
-        // फेक कोडिंग होने पर लाल डैमेज लहरें, असली पर हरी-नीली लहरें
-        if (isFake) {
-            ctx.strokeStyle = '#ff0055';
+        if (isCurrentlyFake) {
+            ctx.strokeStyle = '#ff0055'; // फेक इनपुट पर लाल डैमेज लहरें
         } else {
-            ctx.strokeStyle = '#00e5ff';
+            ctx.strokeStyle = '#00e5ff'; // असली इनपुट पर नीली लहरें
         }
 
-        let amplitude = graphActive ? (stressScore > 50 ? 25 : 12) : 2;
-        let frequency = isFake ? 0.2 : 0.08;
+        let textLen = hackerInput.value.length;
+        // अगर यूजर टाइप कर रहा है तो लहरें ऊंची होंगी, शांत होने पर पतली सीधी लकीर
+        let amplitude = textLen > 0 ? (currentStress > 50 ? 25 : 12) : 2;
+        let frequency = isCurrentlyFake ? 0.2 : 0.08;
 
         for (let x = 0; x < canvas.width; x++) {
             let y = (canvas.height / 2) + Math.sin(x * frequency + waveOffset) * amplitude;
@@ -262,18 +247,14 @@
         ctx.stroke();
         
         waveOffset += 0.15;
-        if (graphActive) {
-            requestAnimationFrame(() => drawGraph(stressScore, focusScore, isFake));
-        }
+        animationId = requestAnimationFrame(animateGraph);
     }
 
-    // 3. मुख्य इनपुट और एंटी-फेक फ़िल्टर लॉजिक
+    // एनीमेशन लूप तुरंत चालू करें (यह बिना माइक लॉक के हमेशा बैकग्राउंड में रहेगा)
+    animateGraph();
+
     hackerInput.addEventListener('input', (e) => {
-        if (!startTime) {
-            startTime = Date.now();
-            initAutoMic(); // टाइपिंग शुरू होते ही माइक चालू
-            graphActive = true;
-        }
+        if (!startTime) startTime = Date.now();
 
         let val = hackerInput.value;
 
@@ -286,47 +267,57 @@
         let cpm = timePassed > 0 ? Math.round(val.length / timePassed) : 0;
 
         // --- एंटी-फेक (किडमिट-किडमिट) फ़िल्टर ---
-        // नियम: अगर बिना स्पेस दिए लगातार 12 से ज्यादा अक्षर टाइप किए जाएं (जैसे sssdddfff)
         let words = val.split(' ');
         let longestWord = Math.max(...words.map(w => w.length));
-        let isFake = longestWord > 12 && val.length > 15;
-
-        let stressScore = 0;
-        let focusScore = 0;
+        isCurrentlyFake = longestWord > 12 && val.length > 15;
 
         if (val.length === 0) {
+            currentStress = 0;
+            currentFocus = 0;
             stressVal.innerText = "0%";
             focusVal.innerText = "0%";
             statusText.innerText = "WAITING FOR BIO-INPUT...";
             statusText.className = "";
             statusText.style.color = "var(--neon-cyan)";
-            graphActive = false;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             return;
         }
 
-        if (isFake) {
-            // फेक इनपुट होने पर रडार ब्लॉक
+        if (isCurrentlyFake) {
             stressVal.innerText = "--";
             focusVal.innerText = "--";
             statusText.innerText = "[ALERT: FAKE INTENT / TIME-PASS DETECTED]";
             statusText.className = "alert-active";
             statusText.style.color = "var(--neon-red)";
-            drawGraph(90, 10, true);
         } else {
-            // असली इनपुट होने पर गणना चालू
-            focusScore = Math.min(Math.max(Math.round(cpm / 2.5), 15), 98);
+            currentFocus = Math.min(Math.max(Math.round(cpm / 2.5), 15), 98);
             
             let baseStress = 12;
             if (totalKeys > 0) {
                 baseStress += Math.round((backspaceCount / totalKeys) * 140);
             }
-            if (cpm > 240) baseStress += 20; // हड़बड़ी
-            stressScore = Math.min(Math.max(baseStress, 6), 95);
+            if (cpm > 240) baseStress += 20; 
+            currentStress = Math.min(Math.max(baseStress, 6), 95);
 
-            stressVal.innerText = stressScore + "%";
-            focusVal.innerText = focusScore + "%";
+            stressVal.innerText = currentStress + "%";
+            focusVal.innerText = currentFocus + "%";
 
-            // स्टेटस और क्रिटिकल डिप्रेशन अलर्ट निर्णय
-            if (stressScore > 58) {
-        
+            if (currentStress > 58) {
+                statusText.innerText = "[🚨 CRITICAL EMOTIONAL OVERLOAD / ALERT SENT]";
+                statusText.className = "alert-active";
+                statusText.style.color = "var(--neon-red)";
+            } else if (currentFocus > 65) {
+                statusText.innerText = "[SYSTEM STATUS: HYPER FOCUS / ALPHA MODE]";
+                statusText.className = "";
+                statusText.style.color = "var(--neon-green)";
+            } else {
+                statusText.innerText = "[SYSTEM STATUS: BALANCED MATRIX]";
+                statusText.className = "";
+                statusText.style.color = "var(--neon-cyan)";
+            }
+        }
+    });
+</script>
+
+</body>
+    </html>
+    
