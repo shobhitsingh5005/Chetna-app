@@ -491,6 +491,195 @@
             }
         }
     });
+    // 🧠 महा-इंटेलिजेंट मोबाइल रडार और रैंडम कीबोर्ड स्पैम फिल्टर
+    let lastDeletedWord = "";
+    let rewriteCount = 0;
+    let lastInputType = "";
+    let continuousFakeWords = 0;
+
+    // 🚔 असली पुलिस साइरन साउंड इंजन वेरिएबल्स
+    let audioCtx = null;
+    let osc1 = null;
+    let osc2 = null;
+    let gainNode = null;
+    let sirenPlaying = false;
+    let sirenInterval = null;
+
+    // 🔊 एकदम तीखा पुलिस साइरन शुरू करने का नया फंक्शन
+    function startSiren() {
+        if (sirenPlaying) return;
+        
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        osc1 = audioCtx.createOscillator();
+        osc2 = audioCtx.createOscillator();
+        gainNode = audioCtx.createGain();
+        
+        osc1.type = 'sawtooth';
+        osc2.type = 'sine';
+        
+        osc1.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc2.frequency.setValueAtTime(605, audioCtx.currentTime); 
+        
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc1.start();
+        osc2.start();
+        sirenPlaying = true;
+
+        let up = true;
+        sirenInterval = setInterval(() => {
+            if (!sirenPlaying || !osc1 || !osc2) return;
+            
+            let now = audioCtx.currentTime;
+            if (up) {
+                osc1.frequency.linearRampToValueAtTime(1300, now + 0.25);
+                osc2.frequency.linearRampToValueAtTime(1305, now + 0.25);
+                up = false;
+            } else {
+                osc1.frequency.linearRampToValueAtTime(600, now + 0.25);
+                osc2.frequency.linearRampToValueAtTime(605, now + 0.25);
+                up = true;
+            }
+        }, 260);
+    }
+
+    // 🔇 साइरन बंद करने का फंक्शन
+    function stopSiren() {
+        if (!sirenPlaying) return;
+        if (sirenInterval) {
+            clearInterval(sirenInterval);
+            sirenInterval = null;
+        }
+        if (osc1) {
+            osc1.stop();
+            osc1.disconnect();
+            osc1 = null;
+        }
+        if (osc2) {
+            osc2.stop();
+            osc2.disconnect();
+            osc2 = null;
+        }
+        sirenPlaying = false;
+    }
+
+    hackerInput.addEventListener('input', (e) => {
+        if (!startTime) startTime = Date.now();
+        let val = hackerInput.value;
+        
+        if (e.inputType === 'deleteContentBackward') {
+            backspaceCount++;
+        }
+        totalKeys = val.length + backspaceCount;
+
+        let timePassed = (Date.now() - startTime) / 60000;
+        let cpm = timePassed > 0 ? Math.round(val.length / timePassed) : 0;
+
+        let words = val.trim().split(/\s+/);
+        let longestWord = Math.max(...words.map(w => w.length));
+
+        let containsFakePattern = false;
+        continuousFakeWords = 0;
+
+        // 🔍 यहाँ दोनों चीज़ें चेक हो रही हैं: रैंडम शब्द भी और अक्षरों का दोहराव भी
+        for (let i = 0; i < words.length; i++) {
+            let word = words[i].toLowerCase();
+            if (word.length >= 4) {
+                // नियम A: रैंडम शब्दों को पहचानना (बिना स्वर के लगातार व्यंजन आना जैसे vjghk, asdf)
+                let hasVowel = /[aeiouyआइईउऊएऐओऔािीुूेैोौ]/.test(word);
+                let isKeyboardRowSpam = /asd|sdf|dfg|fgh|ghj|hjk|jkl|qwe|wer|ert|rty|tyu|yui|uio|iop|zxc|xcv|cvb/.test(word);
+                
+                if (!hasVowel || isKeyboardRowSpam || word.length >= 12) {
+                    containsFakePattern = true;
+                    continuousFakeWords++;
+                }
+            } else if (word.length >= 2) {
+                if (!/[aeiouyआइईउऊएऐओऔािीुूेैोौ]/.test(word) && word.length >= 3) {
+                    containsFakePattern = true;
+                    continuousFakeWords++;
+                }
+            }
+        }
+
+        // नियम B: पुराने वाले 5 से ज्यादा अक्षरों के सीधे दोहराव की जांच (जैसे aaaaa)
+        let hasSingleCharSpam = /(.)\1\1\1\1/.test(val);
+
+        // फाइनल कंबाइंड फर्जी इनपुट निर्णय
+        let isFakeTyping = containsFakePattern || hasSingleCharSpam || (continuousFakeWords >= 3) || (longestWord >= 14);
+
+        let currentWord = words[words.length - 1] || "";
+        if (e.inputType === 'deleteContentBackward') {
+            lastDeletedWord = currentWord;
+        }
+        if (lastInputType === 'deleteContentBackward' && e.inputType !== 'deleteContentBackward') {
+            if (currentWord.length > 1 && lastDeletedWord.startsWith(currentWord.substring(0, 2))) {
+                rewriteCount++;
+            } else {
+                rewriteCount = 0;
+            }
+        }
+        lastInputType = e.inputType;
+
+        if (val.length === 0) {
+            currentStress = 0;
+            currentFocus = 0;
+            rewriteCount = 0;
+            continuousFakeWords = 0;
+            stressVal.innerText = "0%";
+            focusVal.innerText = "0%";
+            statusText.innerText = "WAITING FOR BIO-INPUT... / SYSTEM READY";
+            statusText.className = "";
+            statusText.style.color = "var(--neon-cyan)";
+            stopSiren();
+            isCurrentlyFake = false;
+            return;
+        }
+
+        if (isFakeTyping || rewriteCount >= 4) {
+            stressVal.innerText = "--";
+            focusVal.innerText = "--";
+            statusText.innerText = "[🚨 ALERT: RANDOM SPAM / TIME-PASS DETECTED]";
+            statusText.className = "alert-active";
+            statusText.style.color = "var(--neon-red)";
+            isCurrentlyFake = true;
+            startSiren(); 
+        } else {
+            isCurrentlyFake = false;
+            stopSiren(); 
+
+            currentFocus = Math.min(Math.max(Math.round(cpm / 2.5), 15), 98);
+            let baseStress = 12;
+            if (totalKeys > 0) {
+                baseStress += Math.round((backspaceCount / totalKeys) * 140);
+            }
+            if (cpm > 240) baseStress += 20; 
+            currentStress = Math.min(Math.max(baseStress, 6), 95);
+
+            stressVal.innerText = currentStress + "%";
+            focusVal.innerText = currentFocus + "%";
+
+            if (currentStress > 58) {
+                statusText.innerText = "[🚨 CRITICAL EMOTIONAL OVERLOAD / ALERT SENT]";
+                statusText.className = "alert-active";
+                statusText.style.color = "var(--neon-red)";
+            } else {
+                statusText.innerText = "[SYSTEM STATUS: BALANCED MATRIX]";
+                statusText.className = "";
+                statusText.style.color = "var(--neon-cyan)";
+            }
+        }
+    });
+</script>
+</body>
+</html>
+
 </script>
 </body>
 </html>
