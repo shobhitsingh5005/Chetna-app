@@ -316,6 +316,60 @@
             }
         }
     });
+        // 🔊 ऑफलाइन इलेक्ट्रॉनिक साइरन वेरिएबल्स और फंक्शन्स
+    let audioCtx = null;
+    let oscillator = null;
+    let gainNode = null;
+    let sirenPlaying = false;
+
+    function startSiren() {
+        if (sirenPlaying) return;
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        oscillator = audioCtx.createOscillator();
+        gainNode = audioCtx.createGain();
+        oscillator.type = 'sawtooth'; 
+        oscillator.frequency.setValueAtTime(850, audioCtx.currentTime);
+        
+        setInterval(() => {
+            if (sirenPlaying && oscillator) {
+                oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.2);
+                oscillator.frequency.linearRampToValueAtTime(850, audioCtx.currentTime + 0.4);
+            }
+        }, 400);
+
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); 
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        sirenPlaying = true;
+    }
+
+    function stopSiren() {
+        if (!sirenPlaying) return;
+        if (oscillator) {
+            oscillator.stop();
+            oscillator.disconnect();
+            oscillator = null;
+        }
+        sirenPlaying = false;
+    }
+
+    hackerInput.addEventListener('input', () => {
+        let val = hackerInput.value;
+        let words = val.split(' ');
+        let longestWord = Math.max(...words.map(w => w.length));
+        if (longestWord >= 15 && val.length > 15) {
+            startSiren();
+        } else {
+            stopSiren();
+        }
+        if (val.length === 0) {
+            stopSiren();
+        }
+    });
+    
 </script>
 
 </body>
