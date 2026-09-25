@@ -206,6 +206,10 @@
     const canvas = document.getElementById('liveGraph');
     const ctx = canvas.getContext('2d');
 
+    // सेट कैनवस साइज़
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
     let totalKeys = 0;
     let backspaceCount = 0;
     let startTime = null;
@@ -275,13 +279,11 @@
             sirenInterval = null;
         }
         if (osc1) {
-            osc1.stop();
-            osc1.disconnect();
+            try { osc1.stop(); osc1.disconnect(); } catch(e){}
             osc1 = null;
         }
         if (osc2) {
-            osc2.stop();
-            osc2.disconnect();
+            try { osc2.stop(); osc2.disconnect(); } catch(e){}
             osc2 = null;
         }
         sirenPlaying = false;
@@ -300,8 +302,8 @@
         }
 
         let textLen = hackerInput.value.length;
-        let amplitude = textLen > 0 ? (currentStress > 50 ? 25 : 12) : 2;
-        let frequency = isCurrentlyFake ? 0.2 : 0.08;
+        let amplitude = textLen > 0 ? (currentStress > 50 ? 35 : 15) : 2;
+        let frequency = isCurrentlyFake ? 0.15 : 0.05;
 
         for (let x = 0; x < canvas.width; x++) {
             let y = (canvas.height / 2) + Math.sin(x * frequency + waveOffset) * amplitude;
@@ -316,12 +318,7 @@
 
     animateGraph();
 
-    // 🧠 महा-इंटेलिजेंट मोबाइल रडार और रैंडम कीबोर्ड स्पैम फिल्टर
-    let lastDeletedWord = "";
-    let rewriteCount = 0;
-    let lastInputType = "";
-    let continuousFakeWords = 0;
-
+    // 🧠 न्यूरो एल्गोरिदम और इनपुट डिटेक्टर
     hackerInput.addEventListener('input', (e) => {
         if (!startTime) startTime = Date.now();
         let val = hackerInput.value;
@@ -331,16 +328,13 @@
         }
         totalKeys = val.length + backspaceCount;
 
-        let timePassed = (Date.now() - startTime) / 60000;
+        // कैलकुलेशन: टाइम और कीस्ट्रोक स्पीड
+        let timePassed = (Date.now() - startTime) / 60000; // मिनटों में
         let cpm = timePassed > 0 ? Math.round(val.length / timePassed) : 0;
 
-        let words = val.trim().split(/\s+/);
-        let longestWord = Math.max(...words.map(w => w.length));
-
-        let containsFakePattern = false;
-        continuousFakeWords = 0;
-
-        for (let i = 0; i < words.length; i++) {
-            let word = words[i].toLowerCase();
-            if (word.length >= 4) {
+        // तनाव (Stress) और एकाग्रता (Focus) का लाइव लॉजिक
+        if(val.length > 0) {
+            // ज्यादा बैकस्पेस दबाने से या बहुत तेज़/अजीब टाइपिंग से तनाव बढ़ेगा
+            let backspaceRatio = (backspaceCount / totalKeys) * 100;
+            currentStress = Math.min(100, Math.round((backspaceRatio * 2) + (cpm > 300 ? 40 : 10)));
     
