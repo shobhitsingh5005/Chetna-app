@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHETNA Bio-Digital OS - Core Terminal</title>
+    <title>CHETNA Bio-Digital OS - Terminal v1.1</title>
     <style>
         :root {
             --bg-dark: #05070b;
@@ -24,6 +24,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
         .terminal-container {
@@ -48,6 +49,7 @@
             color: var(--neon-green);
             font-size: 20px;
             margin: 0;
+            text-shadow: 0 0 10px var(--matrix-glow);
             letter-spacing: 2px;
         }
 
@@ -55,6 +57,11 @@
             font-size: 11px;
             color: var(--neon-cyan);
             margin-top: 5px;
+        }
+
+        .radar-box {
+            position: relative;
+            margin-bottom: 20px;
         }
 
         textarea {
@@ -67,12 +74,14 @@
             border-radius: 6px;
             font-size: 14px;
             resize: none;
+            box-shadow: inset 0 0 10px rgba(0, 255, 102, 0.1);
             box-sizing: border-box;
         }
 
         textarea:focus {
             outline: none;
             border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
         }
 
         .graph-wrapper {
@@ -83,6 +92,15 @@
             margin-bottom: 20px;
             height: 100px;
             position: relative;
+        }
+
+        .graph-title {
+            font-size: 10px;
+            color: #64748b;
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            text-transform: uppercase;
         }
 
         canvas {
@@ -110,6 +128,7 @@
             font-size: 10px;
             color: #64748b;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .value {
@@ -132,6 +151,16 @@
         #statusText {
             font-size: 14px;
             font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .alert-active {
+            color: var(--neon-red) !important;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; }
         }
     </style>
 </head>
@@ -139,15 +168,16 @@
 
 <div class="terminal-container">
     <div class="system-header">
-        <h1>[CHETNA BIO-DIGITAL OS v1.3]</h1>
-        <div class="status-tag">CORE INFRASTRUCTURE: ONLINE // ENGINE ARM</div>
+        <h1>[CHETNA BIO-DIGITAL OS v1.1]</h1>
+        <div class="status-tag">CORE STATUS: ACTIVE // KEYSTROKE RADAR ONLINE</div>
     </div>
 
     <div class="radar-box">
-        <textarea id="hackerInput" placeholder="> यहाँ टाइप करना शुरू करें... बायो-सिग्नल्स रडार सक्रिय है..."></textarea>
+        <textarea id="hackerInput" placeholder="> यहाँ टाइप करना शुरू करें... बायो-सिग्नल्स रडार सक्रिय हो जाएगा..."></textarea>
     </div>
 
     <div class="graph-wrapper">
+        <div class="graph-title">// लाइव न्यूरो-बायो स्पेक्ट्रोग्राम (LIVE KEYSTROKE SIGNALS)</div>
         <canvas id="liveGraph"></canvas>
     </div>
 
@@ -163,6 +193,7 @@
     </div>
 
     <div class="status-bar">
+        <div class="label">// सिस्टम डायग्नोस्टिक्स विश्लेषण</div>
         <div id="statusText" style="color: var(--neon-cyan);">WAITING FOR BIO-INPUT...</div>
     </div>
 </div>
@@ -179,82 +210,33 @@
     let backspaceCount = 0;
     let startTime = null;
     let waveOffset = 0;
+    let animationId = null;
     let currentStress = 0;
     let currentFocus = 0;
     let isCurrentlyFake = false;
 
-    // 🚔 तीखा पुलिस साइरन इंजन
-    let audioCtx = null;
-    let osc1 = null;
-    let osc2 = null;
-    let gainNode = null;
-    let sirenPlaying = false;
-    let sirenInterval = null;
-
-    function startSiren() {
-        if (sirenPlaying) return;
-        try {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-
-            osc1 = audioCtx.createOscillator();
-            osc2 = audioCtx.createOscillator();
-            gainNode = audioCtx.createGain();
-            
-            osc1.type = 'sawtooth';
-            osc2.type = 'sine';
-            
-            osc1.frequency.setValueAtTime(600, audioCtx.currentTime);
-            osc2.frequency.setValueAtTime(605, audioCtx.currentTime); 
-            gainNode.gain.setValueAtTime(0.18, audioCtx.currentTime); 
-            
-            osc1.connect(gainNode);
-            osc2.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            osc1.start();
-            osc2.start();
-            sirenPlaying = true;
-
-            let up = true;
-            sirenInterval = setInterval(() => {
-                if (!sirenPlaying || !osc1 || !osc2) return;
-                let now = audioCtx.currentTime;
-                if (up) {
-                    osc1.frequency.linearRampToValueAtTime(1300, now + 0.24);
-                    osc2.frequency.linearRampToValueAtTime(1305, now + 0.24);
-                    up = false;
-                } else {
-                    osc1.frequency.linearRampToValueAtTime(600, now + 0.24);
-                    osc2.frequency.linearRampToValueAtTime(605, now + 0.24);
-                    up = true;
-                }
-            }, 250);
-        } catch (e) {}
+    function resizeCanvas() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
     }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-    function stopSiren() {
-        if (!sirenPlaying) return;
-        if (sirenInterval) { clearInterval(sirenInterval); sirenInterval = null; }
-        try {
-            if (osc1) { osc1.stop(); osc1.disconnect(); osc1 = null; }
-            if (osc2) { osc2.stop(); osc2.disconnect(); osc2 = null; }
-        } catch (e) {}
-        sirenPlaying = false;
-    }
-
-    // 🌊 स्वतंत्र लाइव हैकर ग्राफ़
+    // स्वतंत्र हाइब्रिड ग्राफ एनीमेशन जो बिना परमिशन लॉक के तुरंत चलेगा
     function animateGraph() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.beginPath();
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2;
         
-        ctx.strokeStyle = isCurrentlyFake ? '#ff0055' : '#00e5ff';
+        if (isCurrentlyFake) {
+            ctx.strokeStyle = '#ff0055'; // फेक इनपुट पर लाल डैमेज लहरें
+        } else {
+            ctx.strokeStyle = '#00e5ff'; // असली इनपुट पर नीली लहरें
+        }
 
         let textLen = hackerInput.value.length;
-        let amplitude = textLen > 0 ? (currentStress > 50 ? 25 : 12) : 4;
+        // अगर यूजर टाइप कर रहा है तो लहरें ऊंची होंगी, शांत होने पर पतली सीधी लकीर
+        let amplitude = textLen > 0 ? (currentStress > 50 ? 25 : 12) : 2;
         let frequency = isCurrentlyFake ? 0.2 : 0.08;
 
         for (let x = 0; x < canvas.width; x++) {
@@ -263,28 +245,176 @@
             else ctx.lineTo(x, y);
         }
         ctx.stroke();
-        waveOffset += 0.14;
-        requestAnimationFrame(animateGraph);
+        
+        waveOffset += 0.15;
+        animationId = requestAnimationFrame(animateGraph);
     }
 
-    function resizeCanvas() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    // एनीमेशन लूप तुरंत चालू करें (यह बिना माइक लॉक के हमेशा बैकग्राउंड में रहेगा)
     animateGraph();
 
-    // 🧠 कोर व्यवहारिक फ़िल्टर
+    hackerInput.addEventListener('input', (e) => {
+        if (!startTime) startTime = Date.now();
+
+        let val = hackerInput.value;
+
+        if (e.inputType === 'deleteContentBackward') {
+            backspaceCount++;
+        }
+        totalKeys = val.length + backspaceCount;
+
+        let timePassed = (Date.now() - startTime) / 60000;
+        let cpm = timePassed > 0 ? Math.round(val.length / timePassed) : 0;
+
+        // --- एंटी-फेक (किडमिट-किडमिट) फ़िल्टर ---
+        let words = val.split(' ');
+        let longestWord = Math.max(...words.map(w => w.length));
+        isCurrentlyFake = longestWord > 12 && val.length > 15;
+
+        if (val.length === 0) {
+            currentStress = 0;
+            currentFocus = 0;
+            stressVal.innerText = "0%";
+            focusVal.innerText = "0%";
+            statusText.innerText = "WAITING FOR BIO-INPUT...";
+            statusText.className = "";
+            statusText.style.color = "var(--neon-cyan)";
+            return;
+        }
+
+        if (isCurrentlyFake) {
+            stressVal.innerText = "--";
+            focusVal.innerText = "--";
+            statusText.innerText = "[ALERT: FAKE INTENT / TIME-PASS DETECTED]";
+            statusText.className = "alert-active";
+            statusText.style.color = "var(--neon-red)";
+        } else {
+            currentFocus = Math.min(Math.max(Math.round(cpm / 2.5), 15), 98);
+            
+            let baseStress = 12;
+            if (totalKeys > 0) {
+                baseStress += Math.round((backspaceCount / totalKeys) * 140);
+            }
+            if (cpm > 240) baseStress += 20; 
+            currentStress = Math.min(Math.max(baseStress, 6), 95);
+
+            stressVal.innerText = currentStress + "%";
+            focusVal.innerText = currentFocus + "%";
+
+            if (currentStress > 58) {
+                statusText.innerText = "[🚨 CRITICAL EMOTIONAL OVERLOAD / ALERT SENT]";
+                statusText.className = "alert-active";
+                statusText.style.color = "var(--neon-red)";
+            } else if (currentFocus > 65) {
+                statusText.innerText = "[SYSTEM STATUS: HYPER FOCUS / ALPHA MODE]";
+                statusText.className = "";
+                statusText.style.color = "var(--neon-green)";
+            } else {
+                statusText.innerText = "[SYSTEM STATUS: BALANCED MATRIX]";
+                statusText.className = "";
+                statusText.style.color = "var(--neon-cyan)";
+            }
+        }
+    });
+        // 🔊 ऑफलाइन इलेक्ट्रॉनिक साइरन वेरिएबल्स और फंक्शन्स
+    let audioCtx = null;
+    let oscillator = null;
+    let gainNode = null;
+    let sirenPlaying = false;
+
+    function startSiren() {
+        if (sirenPlaying) return;
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        oscillator = audioCtx.createOscillator();
+        gainNode = audioCtx.createGain();
+        oscillator.type = 'sawtooth'; 
+        oscillator.frequency.setValueAtTime(850, audioCtx.currentTime);
+        
+        setInterval(() => {
+            if (sirenPlaying && oscillator) {
+                oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.2);
+                oscillator.frequency.linearRampToValueAtTime(850, audioCtx.currentTime + 0.4);
+            }
+        }, 400);
+
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); 
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        sirenPlaying = true;
+    }
+
+    function stopSiren() {
+        if (!sirenPlaying) return;
+        if (oscillator) {
+            oscillator.stop();
+            oscillator.disconnect();
+            oscillator = null;
+        }
+        sirenPlaying = false;
+    }
+
+    hackerInput.addEventListener('input', () => {
+        let val = hackerInput.value;
+        let words = val.split(' ');
+        let longestWord = Math.max(...words.map(w => w.length));
+        if (longestWord >= 15 && val.length > 15) {
+            startSiren();
+        } else {
+            stopSiren();
+        }
+        if (val.length === 0) {
+            stopSiren();
+        }
+    });
+    
+    // 🧠 एडवांस एंटी-फेक और की-होल्ड वेरिएबल्स
+    let keyHoldTimeout = null;
+    let isKeyBeingHeld = false;
     let lastDeletedWord = "";
     let rewriteCount = 0;
     let lastInputType = "";
 
+    // कीबोर्ड बटन दबाए रखने को ट्रैक करने का लॉजिक (10 सेकंड डिटेक्शन)
+    hackerInput.addEventListener('keydown', (e) => {
+        if (e.repeat) {
+            if (!isKeyBeingHeld) {
+                isKeyBeingHeld = true;
+                // ⏱️ यदि कोई भी बटन लगातार 10 सेकंड से ज्यादा दबाकर रखेगा तो साइरन बजेगा
+                keyHoldTimeout = setTimeout(() => {
+                    if (isKeyBeingHeld) {
+                        startSiren();
+                        statusText.innerText = "[ALERT: CRITICAL KEY-HOLD SPAM DETECTED]";
+                        statusText.className = "alert-active";
+                        statusText.style.color = "var(--neon-red)";
+                    }
+                }, 10000); // टाइमर को घटाकर सिर्फ 10 सेकंड कर दिया गया है
+            }
+        }
+    });
+
+    hackerInput.addEventListener('keyup', () => {
+        isKeyBeingHeld = false;
+        clearTimeout(keyHoldTimeout);
+        let val = hackerInput.value;
+        let words = val.split(' ');
+        let longestWord = Math.max(...words.map(w => w.length));
+        let hasSpamPatterns = /(.)\1\1\1\1/.test(val);
+        if (!(longestWord >= 16 && hasSpamPatterns) && rewriteCount < 4) {
+            stopSiren();
+        }
+    });
+
+    // मुख्य इनपुट मॉनिटर (तेज़ स्पैम, शब्द काटना-लिखना और स्पीड चेकर)
     hackerInput.addEventListener('input', (e) => {
         if (!startTime) startTime = Date.now();
         let val = hackerInput.value;
         
-        if (e.inputType === 'deleteContentBackward') backspaceCount++;
+        if (e.inputType === 'deleteContentBackward') {
+            backspaceCount++;
+        }
         totalKeys = val.length + backspaceCount;
 
         let timePassed = (Date.now() - startTime) / 60000;
@@ -292,24 +422,13 @@
 
         let words = val.trim().split(/\s+/);
         let longestWord = Math.max(...words.map(w => w.length));
-
-        let containsFakePattern = false;
-        for (let i = 0; i < words.length; i++) {
-            let word = words[i].toLowerCase();
-            if (word.length >= 4) {
-                let hasVowel = /[aeiouyआइईउऊएऐओऔािीुूेैोौ]/.test(word);
-                let isKeyboardRowSpam = /asd|sdf|dfg|fgh|ghj|hjk|jkl|qwe|wer|ert|rty|tyu|yui|uio|iop|zxc|xcv|cvb/.test(word);
-                if (!hasVowel || isKeyboardRowSpam) {
-                    containsFakePattern = true;
-                }
-            }
-        }
         
-        let hasSingleCharSpam = /(.)\1\1\1\1/.test(val);
-        isCurrentlyFake = containsFakePattern || hasSingleCharSpam;
+        let hasSpamPatterns = /(.)\1\1\1\1/.test(val);
 
         let currentWord = words[words.length - 1] || "";
-        if (e.inputType === 'deleteContentBackward') lastDeletedWord = currentWord;
+        if (e.inputType === 'deleteContentBackward') {
+            lastDeletedWord = currentWord;
+        }
         if (lastInputType === 'deleteContentBackward' && e.inputType !== 'deleteContentBackward') {
             if (currentWord.length > 1 && lastDeletedWord.startsWith(currentWord.substring(0, 2))) {
                 rewriteCount++;
@@ -320,6 +439,166 @@
         lastInputType = e.inputType;
 
         if (val.length === 0) {
-    </script>
+            currentStress = 0;
+            currentFocus = 0;
+            rewriteCount = 0;
+            stressVal.innerText = "0%";
+            focusVal.innerText = "0%";
+            statusText.innerText = "WAITING FOR BIO-INPUT...";
+            statusText.className = "";
+            statusText.style.color = "var(--neon-cyan)";
+            stopSiren();
+            return;
+        }
+
+        let isFakeTyping = (longestWord >= 16 && hasSpamPatterns) || (cpm > 280 && hasSpamPatterns) || (rewriteCount >= 4);
+
+        if (isFakeTyping) {
+            stressVal.innerText = "--";
+            focusVal.innerText = "--";
+            statusText.innerText = rewriteCount >= 4 ? "[🚨 ALERT: DESTRUCTIVE REWRITE LOOP DETECTED]" : "[ALERT: FAKE INTENT / TIME-PASS DETECTED]";
+            statusText.className = "alert-active";
+            statusText.style.color = "var(--neon-red)";
+            isCurrentlyFake = true;
+            startSiren();
+        } else {
+            isCurrentlyFake = false;
+            stopSiren();
+
+            currentFocus = Math.min(Math.max(Math.round(cpm / 2.5), 15), 98);
+            let baseStress = 12;
+            if (totalKeys > 0) {
+                baseStress += Math.round((backspaceCount / totalKeys) * 140);
+            }
+            if (cpm > 240) baseStress += 20; 
+            currentStress = Math.min(Math.max(baseStress, 6), 95);
+
+            stressVal.innerText = currentStress + "%";
+            focusVal.innerText = currentFocus + "%";
+
+            if (currentStress > 58) {
+                statusText.innerText = "[🚨 CRITICAL EMOTIONAL OVERLOAD / ALERT SENT]";
+                statusText.className = "alert-active";
+                statusText.style.color = "var(--neon-red)";
+            } else if (currentFocus > 65) {
+                statusText.innerText = "[SYSTEM STATUS: HYPER FOCUS / ALPHA MODE]";
+                statusText.className = "";
+                statusText.style.color = "var(--neon-green)";
+            } else {
+                statusText.innerText = "[SYSTEM STATUS: BALANCED MATRIX]";
+                statusText.className = "";
+                statusText.style.color = "var(--neon-cyan)";
+            }
+        }
+    });
+    // 🧠 महा-इंटेलिजेंट मोबाइल रडार और रैंडम कीबोर्ड स्पैम फिल्टर
+    let lastDeletedWord = "";
+    let rewriteCount = 0;
+    let lastInputType = "";
+    let continuousFakeWords = 0;
+
+    // 🚔 असली पुलिस साइरन साउंड इंजन वेरिएबल्स
+    let audioCtx = null;
+    let osc1 = null;
+    let osc2 = null;
+    let gainNode = null;
+    let sirenPlaying = false;
+    let sirenInterval = null;
+
+    // 🔊 एकदम तीखा पुलिस साइरन शुरू करने का नया फंक्शन
+    function startSiren() {
+        if (sirenPlaying) return;
+        
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        osc1 = audioCtx.createOscillator();
+        osc2 = audioCtx.createOscillator();
+        gainNode = audioCtx.createGain();
+        
+        osc1.type = 'sawtooth';
+        osc2.type = 'sine';
+        
+        osc1.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc2.frequency.setValueAtTime(605, audioCtx.currentTime); 
+        
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc1.start();
+        osc2.start();
+        sirenPlaying = true;
+
+        let up = true;
+        sirenInterval = setInterval(() => {
+            if (!sirenPlaying || !osc1 || !osc2) return;
+            
+            let now = audioCtx.currentTime;
+            if (up) {
+                osc1.frequency.linearRampToValueAtTime(1300, now + 0.25);
+                osc2.frequency.linearRampToValueAtTime(1305, now + 0.25);
+                up = false;
+            } else {
+                osc1.frequency.linearRampToValueAtTime(600, now + 0.25);
+                osc2.frequency.linearRampToValueAtTime(605, now + 0.25);
+                up = true;
+            }
+        }, 260);
+    }
+
+    // 🔇 साइरन बंद करने का फंक्शन
+    function stopSiren() {
+        if (!sirenPlaying) return;
+        if (sirenInterval) {
+            clearInterval(sirenInterval);
+            sirenInterval = null;
+        }
+        if (osc1) {
+            osc1.stop();
+            osc1.disconnect();
+            osc1 = null;
+        }
+        if (osc2) {
+            osc2.stop();
+            osc2.disconnect();
+            osc2 = null;
+        }
+        sirenPlaying = false;
+    }
+
+    hackerInput.addEventListener('input', (e) => {
+        if (!startTime) startTime = Date.now();
+        let val = hackerInput.value;
+        
+        if (e.inputType === 'deleteContentBackward') {
+            backspaceCount++;
+        }
+        totalKeys = val.length + backspaceCount;
+
+        let timePassed = (Date.now() - startTime) / 60000;
+        let cpm = timePassed > 0 ? Math.round(val.length / timePassed) : 0;
+
+        let words = val.trim().split(/\s+/);
+        let longestWord = Math.max(...words.map(w => w.length));
+
+        let containsFakePattern = false;
+        continuousFakeWords = 0;
+
+        // 🔍 यहाँ दोनों चीज़ें चेक हो रही हैं: रैंडम शब्द भी और अक्षरों का दोहराव भी
+        for (let i = 0; i < words.length; i++) {
+            let word = words[i].toLowerCase();
+            if (word.length >= 4) {
+                // नियम A: रैंडम शब्दों को पहचानना (बिना स्वर के लगातार व्यंजन आना जैसे vjghk, asdf)
+                let hasVowel = /[aeiouyआइईउऊएऐओऔािीुूेैोौ]/.test(word);
+                let isKeyboardRowSpam = /asd|sdf|dfg|fgh|ghj|hjk|jkl|qwe|wer|ert|rty|tyu|yui|uio|iop|zxc|xcv|cvb/.test(word);
+                
+                if (!hasVowel || isKeyboardRowSpam || word.length >= 12) {
+                    containsFakePattern = true;
+           </script>
 </body>
 </html>
+    
