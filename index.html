@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHETNA Bio-Digital OS - Core Terminal v1.4</title>
+    <title>CHETNA Bio-Digital OS - Core Terminal</title>
     <style>
         :root {
             --bg-dark: #05070b;
@@ -11,7 +11,6 @@
             --neon-green: #00ff66;
             --neon-cyan: #00e5ff;
             --neon-red: #ff0055;
-            --matrix-glow: rgba(0, 255, 102, 0.2);
             --text-color: #d1f4ff;
         }
 
@@ -70,11 +69,6 @@
             box-sizing: border-box;
         }
 
-        textarea:focus {
-            outline: none;
-            border-color: var(--neon-cyan);
-        }
-
         .graph-wrapper {
             background: #020408;
             border: 1px solid rgba(0, 229, 255, 0.3);
@@ -82,7 +76,6 @@
             padding: 10px;
             margin-bottom: 20px;
             height: 100px;
-            position: relative;
         }
 
         canvas {
@@ -139,12 +132,12 @@
 
 <div class="terminal-container">
     <div class="system-header">
-        <h1>[CHETNA BIO-DIGITAL OS v1.4]</h1>
-        <div class="status-tag">CORE OPERATING TERMINAL // ANTIDOTE ARMED</div>
+        <h1>[CHETNA BIO-DIGITAL OS v1.5]</h1>
+        <div class="status-tag">CORE INFRASTRUCTURE: ONLINE // BIO-ENGINE FIXED</div>
     </div>
 
     <div class="radar-box">
-        <textarea id="hackerInput" placeholder="> टाइप करना शुरू करें... बायो-सिग्नल्स विश्लेषण रडार सक्रिय है..."></textarea>
+        <textarea id="hackerInput" placeholder="> टाइप करना शुरू करें... बायो-सिग्नल्स रडार सक्रिय है..."></textarea>
     </div>
 
     <div class="graph-wrapper">
@@ -183,7 +176,11 @@
     let currentFocus = 0;
     let isCurrentlyFake = false;
 
-    // 🚔 तीखा पुलिस साइरन इंजन (Frequency LFO Sweep)
+    // कैनवास फिक्स (यह एनीमेशन लूप को कभी क्रैश नहीं होने देगा)
+    canvas.width = 560;
+    canvas.height = 100;
+
+    // 🚔 तीखा पुलिस साइरन इंजन
     let audioCtx = null;
     let osc1 = null;
     let osc2 = null;
@@ -245,7 +242,7 @@
         sirenPlaying = false;
     }
 
-    // 🌊 स्वतंत्र लाइव हैकर ग्राफ़
+    // 🌊 अजेय और अटूट एनीमेशन वेव लूप
     function animateGraph() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.beginPath();
@@ -254,7 +251,7 @@
         ctx.strokeStyle = isCurrentlyFake ? '#ff0055' : '#00e5ff';
 
         let textLen = hackerInput.value.length;
-        let amplitude = textLen > 0 ? (currentStress > 50 ? 25 : 12) : 4;
+        let amplitude = textLen > 0 ? (currentStress > 50 ? 25 : 12) : 5;
         let frequency = isCurrentlyFake ? 0.2 : 0.08;
 
         for (let x = 0; x < canvas.width; x++) {
@@ -266,16 +263,11 @@
         waveOffset += 0.14;
         requestAnimationFrame(animateGraph);
     }
-
-    function resizeCanvas() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    
+    // बूट होते ही एनीमेशन को ज़बरदस्ती ऑन करना
     animateGraph();
 
-    // 🧠 एकीकृत सिंगल व्यवहारिक फ़िल्टर (नो डुप्लिकेट कोड)
+    // 🧠 कोर व्यवहारिक फ़िल्टर
     let lastDeletedWord = "";
     let rewriteCount = 0;
     let lastInputType = "";
@@ -291,30 +283,35 @@
         let cpm = timePassed > 0 ? Math.round(val.length / timePassed) : 0;
 
         let words = val.trim().split(/\s+/);
-        let longestWord = Math.max(...words.map(w => w.length));
+        
+        // क्रैश प्रोटेक्शन चेक
+        let longestWord = 0;
+        if (words.length > 0 && words[0] !== "") {
+            longestWord = Math.max(...words.map(w => w.length));
+        }
 
-        // 🔍 केवल वास्तविक कीबोर्ड स्पैम (बिना स्वर के बदलते अक्षर) ही पकड़े जाएंगे
+        // 🧠 स्वर (Vowel) और रैंडम कीबोर्ड रो डिटेक्शन
         let containsFakePattern = false;
-        for (let i = 0; i < words.length; i++) {
-            let word = words[i].toLowerCase();
-            if (word.length >= 4) {
-                let hasVowel = /[aeiouyआइईउऊएऐओऔािीुूेैोौ]/.test(word);
-                let isKeyboardRowSpam = /asd|sdf|dfg|fgh|ghj|hjk|jkl|qwe|wer|ert|rty|tyu|yui|uio|iop|zxc|xcv|cvb/.test(word);
-                if (!hasVowel || isKeyboardRowSpam) {
-                    containsFakePattern = true;
+        if (words.length > 0 && words[0] !== "") {
+            for (let i = 0; i < words.length; i++) {
+                let word = words[i].toLowerCase();
+                if (word.length >= 4) {
+                    let hasVowel = /[aeiouyआइईउऊएऐओऔािीुूेैोौ]/.test(word);
+                    let isKeyboardRowSpam = /asd|sdf|dfg|fgh|ghj|hjk|jkl|qwe|wer|ert|rty|tyu|yui|uio|iop|zxc|xcv|cvb/.test(word);
+                    if (!hasVowel || isKeyboardRowSpam) {
+                        containsFakePattern = true;
+                    }
                 }
             }
         }
         
         let hasSingleCharSpam = /(.)\1\1\1\1/.test(val);
         
-        // 🔒 असली लंबे शब्द (जैसे 16 अक्षरों का नाम या पता) पूरी तरह सुरक्षित हैं!
+        // 🔒 अचूक निर्णय: बकवास स्पैम होने पर ही साइरन गूँजेगा। असली लंबे शब्द बिल्कुल सुरक्षित हैं!
         isCurrentlyFake = containsFakePattern || hasSingleCharSpam;
 
         // बैकस्पेस मिटाना-लिखना ट्रैकर
         let currentWord = words[words.length - 1] || "";
         if (e.inputType === 'deleteContentBackward') lastDeletedWord = currentWord;
         if (lastInputType === 'deleteContentBackward' && e.inputType !== 'deleteContentBackward') {
-        </script>
-</body>
-</html>
+    
