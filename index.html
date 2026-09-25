@@ -410,6 +410,34 @@
             if (typeof isCurrentlyFake !== 'undefined') isCurrentlyFake = false;
         }
     });
+    // 🎛️ सायरन, ग्राफ और चेतावनी को तुरंत रीसेट करने वाला मास्टर लाइव अपडेटर
+    hackerInput.addEventListener('input', (e) => {
+        let val = hackerInput.value;
+        if (val.length === 0) {
+            stopSiren();
+            if (typeof isCurrentlyFake !== 'undefined') isCurrentlyFake = false;
+            return;
+        }
+
+        let words = val.trim().split(/\s+/);
+        let lastWord = words[words.length - 1] || "";
+        
+        let hasNoVowels = lastWord.length >= 5 && !/[aeiouyआइईउऊएऐओऔािीुूेैोौ]/.test(lastWord);
+        let isRowSpam = /asd|sdf|dfg|fgh|ghj|hjk|jkl|qwe|wer|ert|zxc|xcv/.test(lastWord.toLowerCase());
+
+        // 🎯 जादुई फिक्स: यदि स्पेस दबा दिया गया है या वर्तमान शब्द पूरी तरह सही है
+        if ((e.inputType === 'insertText' && e.data === ' ') || (!hasNoVowels && !isRowSpam && lastWord.length < 14)) {
+            stopSiren();
+            // ज़बरदस्ती ग्राफ़ और चेतावनी मैसेज को तुरंत नीले/सामान्य मोड में रीसेट करना
+            isCurrentlyFake = false; 
+            statusText.className = "";
+            statusText.style.color = "var(--neon-cyan)";
+            statusText.innerText = "[SYSTEM STATUS: BALANCED MATRIX]";
+        } else if (hasNoVowels || isRowSpam || lastWord.length >= 25) {
+            if (typeof isCurrentlyFake !== 'undefined') isCurrentlyFake = true;
+            startSiren();
+        }
+    });
 </script>
 </body>
 </html>
