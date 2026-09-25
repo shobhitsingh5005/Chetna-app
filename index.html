@@ -193,7 +193,7 @@
     </div>
 
     <div class="status-bar">
-        <div class="label">// सिस्टम डायग्नोस्टिक्स विश्लेषण</div>
+        <div class="label">// hệ thống phân tích chẩn đoán</div>
         <div id="statusText" style="color: var(--neon-cyan);">WAITING FOR BIO-INPUT...</div>
     </div>
 </div>
@@ -210,7 +210,6 @@
     let backspaceCount = 0;
     let startTime = null;
     let waveOffset = 0;
-    let animationId = null;
     let currentStress = 0;
     let currentFocus = 0;
     let isCurrentlyFake = false;
@@ -222,20 +221,18 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // स्वतंत्र हाइब्रिड ग्राफ एनीमेशन जो बिना परमिशन लॉक के तुरंत चलेगा
     function animateGraph() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.beginPath();
         ctx.lineWidth = 2;
         
         if (isCurrentlyFake) {
-            ctx.strokeStyle = '#ff0055'; // फेक इनपुट पर लाल डैमेज लहरें
+            ctx.strokeStyle = '#ff0055'; 
         } else {
-            ctx.strokeStyle = '#00e5ff'; // असली इनपुट पर नीली लहरें
+            ctx.strokeStyle = '#00e5ff'; 
         }
 
         let textLen = hackerInput.value.length;
-        // अगर यूजर टाइप कर रहा है तो लहरें ऊंची होंगी, शांत होने पर पतली सीधी लकीर
         let amplitude = textLen > 0 ? (currentStress > 50 ? 25 : 12) : 2;
         let frequency = isCurrentlyFake ? 0.2 : 0.08;
 
@@ -247,10 +244,9 @@
         ctx.stroke();
         
         waveOffset += 0.15;
-        animationId = requestAnimationFrame(animateGraph);
+        requestAnimationFrame(animateGraph);
     }
 
-    // एनीमेशन लूप तुरंत चालू करें (यह बिना माइक लॉक के हमेशा बैकग्राउंड में रहेगा)
     animateGraph();
 
     hackerInput.addEventListener('input', (e) => {
@@ -266,7 +262,6 @@
         let timePassed = (Date.now() - startTime) / 60000;
         let cpm = timePassed > 0 ? Math.round(val.length / timePassed) : 0;
 
-        // --- एंटी-फेक (किडमिट-किडमिट) फ़िल्टर ---
         let words = val.split(' ');
         let longestWord = Math.max(...words.map(w => w.length));
         isCurrentlyFake = longestWord > 12 && val.length > 15;
@@ -276,7 +271,7 @@
             currentFocus = 0;
             stressVal.innerText = "0%";
             focusVal.innerText = "0%";
-            statusText.innerText = "WAITING FOR BIO-INPUT...";
+            statusText.innerText = "WAITING FOR BIO-INPUT... / SYSTEM READY";
             statusText.className = "";
             statusText.style.color = "var(--neon-cyan)";
             return;
@@ -316,183 +311,7 @@
             }
         }
     });
-        // 🔊 ऑफलाइन इलेक्ट्रॉनिक साइरन वेरिएबल्स और फंक्शन्स
-    let audioCtx = null;
-    let oscillator = null;
-    let gainNode = null;
-    let sirenPlaying = false;
-
-    function startSiren() {
-        if (sirenPlaying) return;
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        oscillator = audioCtx.createOscillator();
-        gainNode = audioCtx.createGain();
-        oscillator.type = 'sawtooth'; 
-        oscillator.frequency.setValueAtTime(850, audioCtx.currentTime);
-        
-        setInterval(() => {
-            if (sirenPlaying && oscillator) {
-                oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.2);
-                oscillator.frequency.linearRampToValueAtTime(850, audioCtx.currentTime + 0.4);
-            }
-        }, 400);
-
-        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.start();
-        sirenPlaying = true;
-    }
-
-    function stopSiren() {
-        if (!sirenPlaying) return;
-        if (oscillator) {
-            oscillator.stop();
-            oscillator.disconnect();
-            oscillator = null;
-        }
-        sirenPlaying = false;
-    }
-
-    hackerInput.addEventListener('input', () => {
-        let val = hackerInput.value;
-        let words = val.split(' ');
-        let longestWord = Math.max(...words.map(w => w.length));
-        if (longestWord >= 15 && val.length > 15) {
-            startSiren();
-        } else {
-            stopSiren();
-        }
-        if (val.length === 0) {
-            stopSiren();
-        }
-    });
-    
-    // 🧠 एडवांस एंटी-फेक और की-होल्ड वेरिएबल्स
-    let keyHoldTimeout = null;
-    let isKeyBeingHeld = false;
-    let lastDeletedWord = "";
-    let rewriteCount = 0;
-    let lastInputType = "";
-
-    // कीबोर्ड बटन दबाए रखने को ट्रैक करने का लॉजिक (10 सेकंड डिटेक्शन)
-    hackerInput.addEventListener('keydown', (e) => {
-        if (e.repeat) {
-            if (!isKeyBeingHeld) {
-                isKeyBeingHeld = true;
-                // ⏱️ यदि कोई भी बटन लगातार 10 सेकंड से ज्यादा दबाकर रखेगा तो साइरन बजेगा
-                keyHoldTimeout = setTimeout(() => {
-                    if (isKeyBeingHeld) {
-                        startSiren();
-                        statusText.innerText = "[ALERT: CRITICAL KEY-HOLD SPAM DETECTED]";
-                        statusText.className = "alert-active";
-                        statusText.style.color = "var(--neon-red)";
-                    }
-                }, 10000); // टाइमर को घटाकर सिर्फ 10 सेकंड कर दिया गया है
-            }
-        }
-    });
-
-    hackerInput.addEventListener('keyup', () => {
-        isKeyBeingHeld = false;
-        clearTimeout(keyHoldTimeout);
-        let val = hackerInput.value;
-        let words = val.split(' ');
-        let longestWord = Math.max(...words.map(w => w.length));
-        let hasSpamPatterns = /(.)\1\1\1\1/.test(val);
-        if (!(longestWord >= 16 && hasSpamPatterns) && rewriteCount < 4) {
-            stopSiren();
-        }
-    });
-
-    // मुख्य इनपुट मॉनिटर (तेज़ स्पैम, शब्द काटना-लिखना और स्पीड चेकर)
-    hackerInput.addEventListener('input', (e) => {
-        if (!startTime) startTime = Date.now();
-        let val = hackerInput.value;
-        
-        if (e.inputType === 'deleteContentBackward') {
-            backspaceCount++;
-        }
-        totalKeys = val.length + backspaceCount;
-
-        let timePassed = (Date.now() - startTime) / 60000;
-        let cpm = timePassed > 0 ? Math.round(val.length / timePassed) : 0;
-
-        let words = val.trim().split(/\s+/);
-        let longestWord = Math.max(...words.map(w => w.length));
-        
-        let hasSpamPatterns = /(.)\1\1\1\1/.test(val);
-
-        let currentWord = words[words.length - 1] || "";
-        if (e.inputType === 'deleteContentBackward') {
-            lastDeletedWord = currentWord;
-        }
-        if (lastInputType === 'deleteContentBackward' && e.inputType !== 'deleteContentBackward') {
-            if (currentWord.length > 1 && lastDeletedWord.startsWith(currentWord.substring(0, 2))) {
-                rewriteCount++;
-            } else {
-                rewriteCount = 0;
-            }
-        }
-        lastInputType = e.inputType;
-
-        if (val.length === 0) {
-            currentStress = 0;
-            currentFocus = 0;
-            rewriteCount = 0;
-            stressVal.innerText = "0%";
-            focusVal.innerText = "0%";
-            statusText.innerText = "WAITING FOR BIO-INPUT...";
-            statusText.className = "";
-            statusText.style.color = "var(--neon-cyan)";
-            stopSiren();
-            return;
-        }
-
-        let isFakeTyping = (longestWord >= 16 && hasSpamPatterns) || (cpm > 280 && hasSpamPatterns) || (rewriteCount >= 4);
-
-        if (isFakeTyping) {
-            stressVal.innerText = "--";
-            focusVal.innerText = "--";
-            statusText.innerText = rewriteCount >= 4 ? "[🚨 ALERT: DESTRUCTIVE REWRITE LOOP DETECTED]" : "[ALERT: FAKE INTENT / TIME-PASS DETECTED]";
-            statusText.className = "alert-active";
-            statusText.style.color = "var(--neon-red)";
-            isCurrentlyFake = true;
-            startSiren();
-        } else {
-            isCurrentlyFake = false;
-            stopSiren();
-
-            currentFocus = Math.min(Math.max(Math.round(cpm / 2.5), 15), 98);
-            let baseStress = 12;
-            if (totalKeys > 0) {
-                baseStress += Math.round((backspaceCount / totalKeys) * 140);
-            }
-            if (cpm > 240) baseStress += 20; 
-            currentStress = Math.min(Math.max(baseStress, 6), 95);
-
-            stressVal.innerText = currentStress + "%";
-            focusVal.innerText = currentFocus + "%";
-
-            if (currentStress > 58) {
-                statusText.innerText = "[🚨 CRITICAL EMOTIONAL OVERLOAD / ALERT SENT]";
-                statusText.className = "alert-active";
-                statusText.style.color = "var(--neon-red)";
-            } else if (currentFocus > 65) {
-                statusText.innerText = "[SYSTEM STATUS: HYPER FOCUS / ALPHA MODE]";
-                statusText.className = "";
-                statusText.style.color = "var(--neon-green)";
-            } else {
-                statusText.innerText = "[SYSTEM STATUS: BALANCED MATRIX]";
-                statusText.className = "";
-                statusText.style.color = "var(--neon-cyan)";
-            }
-        }
-    });
-    
-           </script>
+</script>
 </body>
-</html>
+    </html>
     
