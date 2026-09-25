@@ -311,7 +311,76 @@
             }
         }
     });
+    // 🚔 असली तीखा पुलिस सायरन साउंड इंजन (LFO Sweep)
+    let audioCtx = null;
+    let osc1 = null;
+    let osc2 = null;
+    let gainNode = null;
+    let sirenInterval = null;
+
+    function startSiren() {
+        if (window.sirenPlaying) return;
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            osc1 = audioCtx.createOscillator();
+            osc2 = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            
+            osc1.type = 'sawtooth';
+            osc2.type = 'sine';
+            
+            osc1.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc2.frequency.setValueAtTime(605, audioCtx.currentTime); 
+            gainNode.gain.setValueAtTime(0.18, audioCtx.currentTime); 
+            
+            osc1.connect(gainNode);
+            osc2.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc1.start();
+            osc2.start();
+            window.sirenPlaying = true;
+
+            let up = true;
+            sirenInterval = setInterval(() => {
+                if (!window.sirenPlaying || !osc1 || !osc2) return;
+                let now = audioCtx.currentTime;
+                if (up) {
+                    osc1.frequency.linearRampToValueAtTime(1300, now + 0.24);
+                    osc2.frequency.linearRampToValueAtTime(1305, now + 0.24);
+                    up = false;
+                } else {
+                    osc1.frequency.linearRampToValueAtTime(600, now + 0.24);
+                    osc2.frequency.linearRampToValueAtTime(605, now + 0.24);
+                    up = true;
+                }
+            }, 250);
+        } catch (e) {}
+    }
+
+    function stopSiren() {
+        if (!window.sirenPlaying) return;
+        if (sirenInterval) { clearInterval(sirenInterval); sirenInterval = null; }
+        try {
+            if (osc1) { osc1.stop(); osc1.disconnect(); osc1 = null; }
+            if (osc2) { osc2.stop(); osc2.disconnect(); osc2 = null; }
+        } catch (e) {}
+        window.sirenPlaying = false;
+    }
+
+    // सायरन को पुराने एंटी-फेक फिल्टर से जोड़ने का ऑटो-लूप
+    setInterval(() => {
+        if (typeof isCurrentlyFake !== 'undefined' && isCurrentlyFake) {
+            startSiren();
+        } else {
+            stopSiren();
+        }
+    }, 100);
 </script>
 </body>
-    </html>
-    
+</html>
+
