@@ -380,7 +380,38 @@
             stopSiren();
         }
     }, 100);
+    // 🎛️ सायरन को तुरंत शांत करने और रैंडम शब्दों को परखने का लाइव अपडेटर
+    hackerInput.addEventListener('input', (e) => {
+        let val = hackerInput.value;
+        if (val.length === 0) {
+            stopSiren();
+            if (typeof isCurrentlyFake !== 'undefined') isCurrentlyFake = false;
+            return;
+        }
+
+        let words = val.trim().split(/\s+/);
+        let lastWord = words[words.length - 1] || "";
+        
+        // 🔍 रैंडम शब्द की जाँच (बिना स्वर के लगातार 5 से ज्यादा व्यंजन आना)
+        let hasNoVowels = lastWord.length >= 5 && !/[aeiouyआइईउऊएऐओऔािीुूेैोौ]/.test(lastWord);
+        let isRowSpam = /asd|sdf|dfg|fgh|ghj|hjk|jkl|qwe|wer|ert|zxc|xcv/.test(lastWord.toLowerCase());
+
+        // यदि स्पेस दबा दिया गया है या आख़िरी शब्द बिल्कुल सही और सार्थक है
+        if (e.inputType === 'insertText' && e.data === ' ') {
+            stopSiren();
+            if (typeof isCurrentlyFake !== 'undefined') isCurrentlyFake = false;
+        } else if (hasNoVowels || isRowSpam || lastWord.length >= 25) {
+            // केवल तभी सायरन बजेगा जब सच में बिना स्वर का बकवास रैंडम स्पैम होगा
+            if (typeof isCurrentlyFake !== 'undefined') isCurrentlyFake = true;
+            startSiren();
+        } else {
+            // असली लंबे शब्दों (जैसे Telecommunications) पर सायरन को ज़बरदस्ती रोक देगा
+            stopSiren();
+            if (typeof isCurrentlyFake !== 'undefined') isCurrentlyFake = false;
+        }
+    });
 </script>
 </body>
 </html>
+
 
