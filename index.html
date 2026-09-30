@@ -438,8 +438,192 @@
             startSiren();
         }
     });
+
+<!-- 🎮 ==================== टाइपिस्ट मास्टर गेमिंग जोन (START) ==================== -->
+<style>
+    /* 🎨 गेमिंग स्क्रीन की स्टाइल - पुरानी स्टाइल को बिना छुए */
+    .typing-game-screen {
+        background: #020408;
+        border: 1px solid var(--neon-cyan);
+        border-radius: 6px;
+        height: 180px;
+        position: relative;
+        overflow: hidden;
+        margin: 15px auto;
+        max-width: 600px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .game-cloud {
+        position: absolute;
+        background: rgba(0, 229, 255, 0.15);
+        border: 1px solid var(--neon-cyan);
+        padding: 6px 12px;
+        border-radius: 15px;
+        color: #fff;
+        font-weight: bold;
+        font-size: 16px;
+        white-space: nowrap;
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+    }
+    .game-letter {
+        position: absolute;
+        color: var(--neon-green);
+        font-size: 24px;
+        font-weight: bold;
+        text-shadow: 0 0 8px var(--neon-green);
+    }
+    .mode-btn-container {
+        display: flex;
+        gap: 10px;
+        margin: 15px auto;
+        max-width: 600px;
+        width: 100%;
+    }
+    .game-btn {
+        flex: 1;
+        background: #0a0f1d;
+        border: 1px solid var(--neon-green);
+        color: var(--neon-green);
+        padding: 8px;
+        cursor: pointer;
+        font-family: monospace;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    .game-btn:hover {
+        background: var(--neon-green);
+        color: #000;
+    }
+</style>
+
+<!-- 📺 गेम स्क्रीन और बटनों का ढांचा -->
+<div class="mode-btn-container">
+    <button class="game-btn" onclick="startChetnaGameMode('clouds')">[मोड 1: उड़ते हुए बादल]</button>
+    <button class="game-btn" onclick="startChetnaGameMode('letters')">[मोड 2: बिखरे हुए अक्षर]</button>
+</div>
+
+<div class="typing-game-screen" id="chetnaGameZone">
+    <!-- उड़ते हुए शब्द और अक्षर यहाँ लाइव रेंडर होंगे -->
+</div>
+
+<script>
+    // 🕹️ गेम इंजन स्क्रिप्ट - पुराने स्क्रिप्ट वेरिएबल्स को बिना डिस्टर्ब किए
+    let chetnaGameElements = [];
+    let chetnaGameLoopTimer = null;
+    let chetnaActiveMode = null;
+
+    const chetnaWordBank = ["asdf", "jkl;", "fall", "glad", "sad", "flask", "code", "matrix"];
+    const chetnaLettersBank = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    function startChetnaGameMode(mode) {
+        clearInterval(chetnaGameLoopTimer);
+        document.getElementById('chetnaGameZone').innerHTML = '';
+        chetnaGameElements = [];
+        chetnaActiveMode = mode;
+        
+        // हर 1.5 सेकंड में नया बादल या अक्षर पैदा करना
+        chetnaGameLoopTimer = setInterval(() => {
+            if (mode === 'clouds') spawnChetnaCloud();
+            if (mode === 'letters') spawnChetnaLetter();
+        }, 1500);
+
+        // यदि पुराना स्टेटस टेक्स्ट बार मौजूद है तो अपडेट करें
+        const oldStatus = document.getElementById('statusText');
+        if (oldStatus) {
+            oldStatus.innerText = `[GAME ENGINE ACTIVE: ${mode.toUpperCase()}]`;
+        }
+    }
+
+    function spawnChetnaCloud() {
+        let zone = document.getElementById('chetnaGameZone');
+        let el = document.createElement('div');
+        el.className = 'game-cloud';
+        let word = chetnaWordBank[Math.floor(Math.random() * chetnaWordBank.length)];
+        el.innerText = word;
+        el.style.left = zone.offsetWidth + 'px';
+        el.style.top = Math.random() * (zone.offsetHeight - 40) + 'px';
+        zone.appendChild(el);
+        
+        chetnaGameElements.push({ element: el, text: word, x: zone.offsetWidth, y: 0, speed: 2 });
+    }
+
+    function spawnChetnaLetter() {
+        let zone = document.getElementById('chetnaGameZone');
+        let el = document.createElement('div');
+        el.className = 'game-letter';
+        let char = chetnaLettersBank[Math.floor(Math.random() * chetnaLettersBank.length)];
+        el.innerText = char;
+        el.style.left = Math.random() * (zone.offsetWidth - 30) + 'px';
+        el.style.top = zone.offsetHeight + 'px';
+        zone.appendChild(el);
+        
+        chetnaGameElements.push({ element: el, text: char.toLowerCase(), x: 0, y: zone.offsetHeight, speed: 1.5 });
+    }
+
+    // ⏱️ फिजिक्स एनिमेशन और टाइम-आउट लूप (दाएं से बाएं और नीचे से ऊपर)
+    function runChetnaGamePhysics() {
+        let zone = document.getElementById('chetnaGameZone');
+        
+        chetnaGameElements.forEach((obj, index) => {
+            if (chetnaActiveMode === 'clouds') {
+                obj.x -= obj.speed; 
+                obj.element.style.left = obj.x + 'px';
+                
+                // अगर बादल बिना टाइप हुए स्क्रीन पार कर गया
+                if (obj.x < -120) {
+                    applyChetnaPenalty(index);
+                }
+            } else if (chetnaActiveMode === 'letters') {
+                obj.y -= obj.speed; 
+                obj.element.style.top = obj.y + 'px';
+                
+                // अगर अक्षर बिना टाइप हुए ऊपर आसमान में निकल गया
+                if (obj.y < -40) {
+                    applyChetnaPenalty(index);
+                }
+            }
+        });
+        requestAnimationFrame(runChetnaGamePhysics);
+    }
+    requestAnimationFrame(runChetnaGamePhysics);
+
+    function applyChetnaPenalty(index) {
+        if(chetnaGameElements[index]) {
+            chetnaGameElements[index].element.remove();
+            chetnaGameElements.splice(index, 1);
+        }
+        
+        // पेनल्टी: पुराने सायरन इंजन और फेक इंटेंट फ्लैग को ट्रिगर करना (यदि पुरानी स्क्रिप्ट में उपलब्ध हों)
+        if (typeof isCurrentlyFake !== 'undefined') isCurrentlyFake = true;
+        if (typeof startSiren === 'function') startSiren();
+        setTimeout(() => { if (typeof stopSiren === 'function') stopSiren(); }, 800);
+    }
+
+    // 🎯 पुराने इनपुट बॉक्स (hackerInput) के साथ ऑटो-कनेक्ट होना बिना पुराना कोड छेड़े
+    window.addEventListener('DOMContentLoaded', () => {
+        const targetInput = document.getElementById('hackerInput');
+        if (targetInput) {
+            targetInput.addEventListener('input', (e) => {
+                let currentTypedVal = e.target.value.toLowerCase().trim();
+                
+                chetnaGameElements.forEach((obj, index) => {
+                    if (currentTypedVal === obj.text) {
+                        obj.element.remove();
+                        chetnaGameElements.splice(index, 1);
+                        e.target.value = ""; // शब्द मिलते ही इनपुट क्लीन करना
+                        
+                        // सायरन रोकना और रिसेट करना
+                        if (typeof stopSiren === 'function') stopSiren();
+                        if (typeof isCurrentlyFake !== 'undefined') isCurrentlyFake = false;
+                    }
+                });
+            });
+        }
+    });
+</script>
+<!-- 🎮 ==================== टाइपिस्ट MASTER गेमिंग जोन (END) ==================== -->
 </script>
 </body>
 </html>
-
 
